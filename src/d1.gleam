@@ -5,6 +5,7 @@ import gleam/io
 import gleam/list
 import gleam/regexp
 import gleam/string
+import utils
 
 /// Parse input text containing columns of integers into lists.
 fn parse_columns(text: String) -> List(List(Int)) {
@@ -42,7 +43,7 @@ fn similarity(val: Int, list: List(Int)) -> Int {
 pub fn main() {
   // Part 1
   let sorted_cols =
-    input
+    utils.read_challenge_input(2024, 1)
     |> string.trim
     |> parse_columns
     |> list.map(list.sort(_, int.compare))
