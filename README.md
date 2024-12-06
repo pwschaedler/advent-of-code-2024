@@ -5,6 +5,7 @@ My attempts at AOC 2024 using Gleam. This is my first attempt using Gleam for an
 ## Development
 
 ```sh
-gleam run   # Run the project
-gleam test  # Run the tests
+gleam run        # Run the project (generally)
+gleam run -m d1  # Run a specific day
+gleam test       # Run the tests
 ```
