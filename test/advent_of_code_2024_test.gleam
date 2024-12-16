@@ -1,16 +1,13 @@
+//// Tests for sample input given in problem prompts.
+
 import d2
+import d3
 import gleam/list
 import gleeunit
 import gleeunit/should
 
 pub fn main() {
   gleeunit.main()
-}
-
-// gleeunit test functions end in `_test`
-pub fn hello_world_test() {
-  1
-  |> should.equal(1)
 }
 
 pub fn d2p1_test() {
@@ -45,4 +42,16 @@ pub fn d2p2_personal_test() {
   |> d2.parse_reports
   |> list.count(d2.report_is_safe(_, 1))
   |> should.equal(4)
+}
+
+pub fn d3p1_test() {
+  "xmul(2,4)%&mul[3,7]!@^do_not_mul(5,5)+mul(32,64]then(mul(11,8)mul(8,5))"
+  |> d3.scan_memory_simple
+  |> should.equal(161)
+}
+
+pub fn d3p2_test() {
+  "xmul(2,4)&mul[3,7]!^don't()_mul(5,5)+mul(32,64](mul(11,8)undo()?mul(8,5))"
+  |> d3.scan_memory_conditional
+  |> should.equal(48)
 }
