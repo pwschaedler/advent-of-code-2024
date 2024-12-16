@@ -109,42 +109,61 @@ pub fn report_is_safe(report: Report, tolerance: Int) -> Bool {
   let levels = [None, ..list.map(report.levels, Some)]
   case levels {
     [] | [_] -> True
-    levels ->
-      dir_safe(levels, tolerance, inc_diff)
-      || dir_safe(levels, tolerance, dec_diff)
+    levels -> f(levels, tolerance, inc_diff) || f(levels, tolerance, dec_diff)
   }
 }
 
-/// Check if a list of levels is safe given a directional difference function.
-pub fn dir_safe(
+// Recursively check if a report is safe given a directional difference function.
+pub fn f(
   list: List(Option(Int)),
-  tolerance: Int,
-  diff_fn: fn(Int) -> Bool,
+  tol: Int,
+  diff_fn: fn(Option(Int), Option(Int)) -> Bool,
 ) -> Bool {
-  case tolerance >= 0, list {
-    False, _ -> False
-    _, [] | _, [_] -> True
-    _, [a, b, ..rest] ->
-      case a, b {
-        None, b ->
-          dir_safe([b, ..rest], tolerance, diff_fn)
-          || dir_safe([a, ..rest], tolerance - 1, diff_fn)
-        Some(a), Some(b) ->
-          { diff_fn(b - a) && dir_safe([Some(b), ..rest], tolerance, diff_fn) }
-          || dir_safe([Some(a), ..rest], tolerance - 1, diff_fn)
-        _, _ -> False
+  let t = case tol >= 0 {
+    False -> NoTolerance
+    True -> HasTolerance
+  }
+
+  case t {
+    NoTolerance -> False
+    HasTolerance ->
+      case list {
+        [] | [_] -> True
+        [a, b, ..rest] ->
+          { diff_fn(a, b) && f([b, ..rest], tol, diff_fn) }
+          || f([a, ..rest], tol - 1, diff_fn)
       }
   }
 }
 
+/// Type to define varieties of tolerance availability.
+type Tol {
+  NoTolerance
+  HasTolerance
+}
+
 /// Check for incremental difference.
-pub fn inc_diff(diff: Int) -> Bool {
-  diff >= 1 && diff <= 3
+pub fn inc_diff(a: Option(Int), b: Option(Int)) -> Bool {
+  case a, b {
+    None, _ -> True
+    _, None -> True
+    Some(a), Some(b) -> {
+      let diff = b - a
+      diff >= 1 && diff <= 3
+    }
+  }
 }
 
 /// Check for decremental difference.
-pub fn dec_diff(diff: Int) -> Bool {
-  diff <= -1 && diff >= -3
+pub fn dec_diff(a: Option(Int), b: Option(Int)) -> Bool {
+  case a, b {
+    None, _ -> True
+    _, None -> True
+    Some(a), Some(b) -> {
+      let diff = b - a
+      diff <= -1 && diff >= -3
+    }
+  }
 }
 
 /// Parse string data into Reports.
