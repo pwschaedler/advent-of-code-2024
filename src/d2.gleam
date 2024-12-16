@@ -4,7 +4,7 @@ import gleam/bool
 import gleam/int
 import gleam/io
 import gleam/list
-import gleam/pair
+import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/string
 import utils
@@ -97,87 +97,54 @@ pub fn pair_dec(pair: #(Level, Level)) -> Bool {
   }
 }
 
-/// Remove the first level from the report that would cause it to be unsafe.
-pub fn dampen(report: Report) -> Report {
-  io.debug("=====")
-  io.debug(report)
-  let pairs = report.levels |> list.window_by_2
-  let new_pairs = origo(pairs)
-  Report(unwindow_by_2(new_pairs))
-  // let safety_res = list.fold(pairs, SafeAcc(Same, 0), reduce_safeness)
-  // case safety_res.direction, safety_res.err_count > 1 {
-  //   Same, _ -> False
-  //   _, True -> False
-  //   _, _ -> True
-  // }
-}
+// Everything below is for part two, and technically this could cover the part
+// one section as well. But not gonna lie I still don't really understand how
+// this works, this is very inspired by hints (solutions) on Reddit and Github.
+// See:
+// - https://www.reddit.com/r/adventofcode/comments/1h4rhtl/comment/m00xlm5/?utm_source=share&utm_medium=web3x&utm_name=web3xcss&utm_term=1&utm_content=share_button
+// - https://github.com/edoannunziata/jardin/blob/master/aoc24/AdventOfCode24.ipynb
 
-type SafeAcc {
-  SafeAcc(direction: Direction, err_count: Int)
-}
-
-fn reduce_safeness(acc: SafeAcc, pair: #(Level, Level)) -> SafeAcc {
-  let pair_direction = pair_dir(pair)
-  let diff_err = !safe_diff(pair)
-  let dir_err =
-    bool.exclusive_nor(acc.direction == Same, acc.direction == pair_direction)
-  let next_dir = case acc.direction, pair_direction {
-    Same, Same -> Same
-    Same, other -> other
-    existing, _ -> existing
-  }
-  let err_count = case diff_err || dir_err {
-    True -> acc.err_count + 1
-    False -> acc.err_count
-  }
-  io.debug(SafeAcc(next_dir, err_count))
-  SafeAcc(next_dir, err_count)
-}
-
-type PopListAcc {
-  PopListAcc(return_list: List(#(Level, Level)))
-}
-
-type SafeDirAcc {
-  SafeDirAcc(direction: Direction)
-}
-
-/// Kinda a pop-fold-until
-fn origo(list: List(#(Level, Level))) -> List(#(Level, Level)) {
-  let badmap = list.map_fold(list, SafeDirAcc(Same), fold_unsafe)
-  let popres = case
-    list.pop(badmap.1, fn(a: #(#(Level, Level), Bool)) { a.1 == True })
-  {
-    Ok(res) -> list.map(res.1, pair.first)
-    Error(Nil) -> list
+/// Determine if a report is safe with tolerance.
+pub fn report_is_safe(report: Report, tolerance: Int) -> Bool {
+  let levels = [None, ..list.map(report.levels, Some)]
+  case levels {
+    [] | [_] -> True
+    levels ->
+      dir_safe(levels, tolerance, inc_diff)
+      || dir_safe(levels, tolerance, dec_diff)
   }
 }
 
-fn fold_unsafe(
-  acc: SafeDirAcc,
-  pair: #(Level, Level),
-) -> #(SafeDirAcc, #(#(Level, Level), Bool)) {
-  let pair_direction = pair_dir(pair)
-  let diff_err = !safe_diff(pair)
-  let dir_err =
-    bool.exclusive_nor(acc.direction == Same, acc.direction == pair_direction)
-  let next_dir = case acc.direction, pair_direction {
-    Same, Same -> Same
-    Same, other -> other
-    existing, _ -> existing
+/// Check if a list of levels is safe given a directional difference function.
+pub fn dir_safe(
+  list: List(Option(Int)),
+  tolerance: Int,
+  diff_fn: fn(Int) -> Bool,
+) -> Bool {
+  case tolerance >= 0, list {
+    False, _ -> False
+    _, [] | _, [_] -> True
+    _, [a, b, ..rest] ->
+      case a, b {
+        None, b ->
+          dir_safe([b, ..rest], tolerance, diff_fn)
+          || dir_safe([a, ..rest], tolerance - 1, diff_fn)
+        Some(a), Some(b) ->
+          { diff_fn(b - a) && dir_safe([Some(b), ..rest], tolerance, diff_fn) }
+          || dir_safe([Some(a), ..rest], tolerance - 1, diff_fn)
+        _, _ -> False
+      }
   }
-  #(SafeDirAcc(next_dir), #(pair, diff_err || dir_err))
 }
 
-/// Unwindow a list of pair tuples into a single list.
-pub fn unwindow_by_2(pairs: List(#(val, val))) -> List(val) {
-  case pairs {
-    [first, ..rest] ->
-      list.fold(rest, [first.0, first.1], fn(acc, next) {
-        list.flatten([acc, [next.1]])
-      })
-    [] -> []
-  }
+/// Check for incremental difference.
+pub fn inc_diff(diff: Int) -> Bool {
+  diff >= 1 && diff <= 3
+}
+
+/// Check for decremental difference.
+pub fn dec_diff(diff: Int) -> Bool {
+  diff <= -1 && diff >= -3
 }
 
 /// Parse string data into Reports.
@@ -207,12 +174,10 @@ pub fn main() {
   |> count_safe_reports
   |> int.to_string
   |> io.println
-  // 585
 
   // Part 2
   reports
-  |> list.map(dampen)
-  |> count_safe_reports
+  |> list.count(report_is_safe(_, 1))
   |> int.to_string
   |> io.println
 }
