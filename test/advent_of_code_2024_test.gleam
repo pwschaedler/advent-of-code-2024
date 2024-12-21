@@ -2,6 +2,7 @@
 
 import d2
 import d3
+import d4
 import gleam/list
 import gleeunit
 import gleeunit/should
@@ -54,4 +55,34 @@ pub fn d3p2_test() {
   "xmul(2,4)&mul[3,7]!^don't()_mul(5,5)+mul(32,64](mul(11,8)undo()?mul(8,5))"
   |> d3.scan_memory_conditional
   |> should.equal(48)
+}
+
+pub fn d4p1_test() {
+  "MMMSXXMASM
+MSAMXMSMSA
+AMXSXMAAMM
+MSAMASMSMX
+XMASAMXAMM
+XXAMMXXAMA
+SMSMSASXSS
+SAXAMASAAA
+MAMMMXMMMM
+MXMXAXMASX"
+  |> d4.solve
+  |> should.equal(18)
+}
+
+pub fn d4p2_test() {
+  "MMMSXXMASM
+MSAMXMSMSA
+AMXSXMAAMM
+MSAMASMSMX
+XMASAMXAMM
+XXAMMXXAMA
+SMSMSASXSS
+SAXAMASAAA
+MAMMMXMMMM
+MXMXAXMASX"
+  |> d4.solve_x
+  |> should.equal(9)
 }
