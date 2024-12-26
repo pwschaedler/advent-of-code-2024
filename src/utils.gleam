@@ -10,7 +10,7 @@ import gleam/int
 import simplifile
 
 /// Read challenge input for a given year and day.
-pub fn read_challenge_input(year: Int, day: Int) -> String {
+pub fn read_challenge_input(year year: Int, day day: Int) -> String {
   case read_input_cache(year, day) {
     Ok(data) -> data
     Error(_) -> {
